@@ -7,13 +7,31 @@ interface Card {
 }
 
 interface BlackjackCardProps {
-  card: Card;
+  card?: Card;
   hidden?: boolean;
+  placeholder?: boolean;
 }
 
 const royal: Record<string, string> = { J: "🧝", Q: "👸", K: "🤴" };
 
 function BlackjackCard(props: BlackjackCardProps) {
+  if (props.placeholder || !props.card) {
+    return (
+      <MUICard
+        variant="outlined"
+        sx={{
+          width: 80,
+          height: 120,
+          cursor: "default",
+          userSelect: "none",
+          visibility: "hidden", // this hides the card but it still occupies space
+        }}
+      >
+        <CardContent></CardContent>
+      </MUICard>
+    );
+  }
+
   const { value, suit } = props.card;
   let displayValue = value;
   let displaySuit = suit;

@@ -43,6 +43,7 @@ function calculateHand(hand: Card[]) {
 
 function Game() {
   const [money, setMoney] = useState<number>(1000);
+  const [bet, setBet] = useState<number>(0);
   const [gameState, setGameState] = useState<string>("betting");
   const [deck, setDeck] = useState<Card[]>(getDeck(2));
   const [dealerHand, setDealerHand] = useState<Card[]>([]);
@@ -85,9 +86,64 @@ function Game() {
     }
     await delay(500);
 
+    const dealerTotal = calculateHand(tempDealerHand);
+    const playerTotal = calculateHand(tempPlayerHand);
+
+    // Check if there is a winner right at the beginning
+    if (playerTotal === 21 && dealerTotal !== 21) {
+      setGameState("playerBlackjack");
+      return;
+    } else if (dealerTotal === 21 && playerTotal !== 21) {
+      setGameState("playerLose");
+      return;
+    } else if (dealerTotal === 21 && playerTotal === 21) {
+      setGameState("tie");
+      setMoney(money + bet);
+      return;
+    }
+
     setFirstTurn(true);
     setDeck(newDeck);
     setGameState("playerTurn");
+  }
+
+  async function dealToDealer() {
+    let tempDealerHand = [...dealerHand];
+    while (calculateHand(tempDealerHand) < 17 && deck.length > 0) {
+      await delay(500);
+      const card = deck.pop();
+      if (card) {
+        tempDealerHand.push(card);
+        setDealerHand([...tempDealerHand]);
+      }
+    }
+
+    const dealerTotal = calculateHand(tempDealerHand);
+    const playerTotal = calculateHand(playerHand);
+    if (dealerTotal <= 21 && dealerTotal > playerTotal) {
+      setGameState("playerLose");
+    } else if (dealerTotal === playerTotal) {
+      setGameState("tie");
+    } else {
+      setGameState("playerWin");
+    }
+  }
+
+  function resetMoney() {
+    setMoney(1000);
+  }
+
+  function placeBet(bet: number) {
+    setBet(bet);
+    setMoney(money - bet);
+    setGameState("setup");
+  }
+
+  function continueGame() {
+    setDealerHand([]);
+    setPlayerHand([]);
+    setBet(0);
+    setGameState("betting");
   }
 
   function hit() {
@@ -104,6 +160,10 @@ function Game() {
     }
   }
 
+  function stand() {
+    setGameState("dealerTurn");
+  }
+
   useEffect(() => {
     switch (gameState) {
       // During setup, a deck is created, shuffled, and the cards are dealt
@@ -112,51 +172,103 @@ function Game() {
         const newDeck: Card[] = getDeck(2);
         dealCards(newDeck);
         break;
-
+      case "dealerTurn":
+        dealToDealer();
+        break;
+      case "playerWin":
+        setMoney(money + bet * 2);
+        break;
+      case "playerBlackjack":
+        setMoney(money + bet + bet * 1.5);
+        break;
+      case "tie":
+        setMoney(money + bet);
+        break;
+      case "playerLose":
+        if (money === 0) {
+          setGameState("noMoney");
+        }
+        break;
       default:
         break;
     }
   }, [gameState]);
 
-  // if (dealerHand.length === 0 && playerHand.length === 0) {
-  //   return <b>Preparing table</b>;
-  // }
+  // Code to run after the player's hand changes
+  useEffect(() => {
+    const playerTotal = calculateHand(playerHand);
+    if (playerTotal > 21) {
+      setGameState("playerLose");
+    } else if (playerTotal === 21 && playerHand.length > 2) {
+      setGameState("dealerTurn");
+    }
+  }, [playerHand]);
 
   return (
     <Container sx={{ width: "100vw" }}>
       <Stack direction="column" spacing={6} width="100%">
-        <Container maxWidth={"xl"}>
-          <b>Dealer hand</b>
+        <Stack
+          direction="column"
+          spacing={2}
+          sx={{ visibility: gameState === "betting" ? "hidden" : "visible" }}
+        >
+          <Typography variant="h5">
+            Dealer's hand{" "}
+            {gameState !== "playerTurn" && gameState !== "setup"
+              ? "(total: " + calculateHand(dealerHand) + ")"
+              : null}
+          </Typography>
           <Box display="flex" justifyContent="center" alignItems="center">
             <Stack direction="row" spacing={1}>
-              {dealerHand.length > 0 &&
+              {dealerHand.length === 0 ? (
+                <BlackjackCard placeholder />
+              ) : (
                 dealerHand.map((card, index) => (
-                  <BlackjackCard key={index} card={card} hidden={index === 0} />
-                ))}
+                  <BlackjackCard
+                    key={index}
+                    card={card}
+                    hidden={
+                      index === 0 &&
+                      (gameState === "playerTurn" || gameState === "setup")
+                    }
+                  />
+                ))
+              )}
             </Stack>
           </Box>
-        </Container>
+        </Stack>
         <GameTable
           deck={deck}
           gameState={gameState}
           firstTurn={firstTurn}
           playerTurn={gameState === "playerTurn"}
-          onHit={hit}
           money={money}
+          onHit={hit}
+          onStand={stand}
+          continueGame={continueGame}
+          placeBet={placeBet}
+          resetMoney={resetMoney}
         />
-        <Container>
-          <Typography variant="h4">
+        <Stack
+          direction="column"
+          spacing={2}
+          sx={{ visibility: gameState === "betting" ? "hidden" : "visible" }}
+        >
+          <Typography variant="h5">
             Your hand (total: {calculateHand(playerHand)}), Money: ${money}
           </Typography>
           <Box display="flex" justifyContent="center" alignItems="center">
             <Stack direction="row" spacing={1}>
-              {playerHand.length > 0 &&
+              {playerHand.length === 0 ? (
+                <BlackjackCard placeholder />
+              ) : (
                 playerHand.map((card, index) => (
                   <BlackjackCard key={index} card={card} />
-                ))}
+                ))
+              )}
             </Stack>
           </Box>
-        </Container>
+        </Stack>
       </Stack>
     </Container>
   );
