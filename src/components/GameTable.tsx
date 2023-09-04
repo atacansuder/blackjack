@@ -1,11 +1,7 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Deck from "./Deck";
 import BetSection from "./BetSection";
-
-interface Card {
-  value: string;
-  suit: string;
-}
+import { Card } from "../utils/types";
 
 interface TableProps {
   deck: Card[];

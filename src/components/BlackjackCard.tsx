@@ -1,10 +1,6 @@
 import { Card as MUICard, CardContent, Typography } from "@mui/material";
 import "./BlackjackCard.css";
-
-interface Card {
-  value: string;
-  suit: string;
-}
+import { Card } from "../utils/types";
 
 interface BlackjackCardProps {
   card?: Card;

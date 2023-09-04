@@ -1,10 +1,6 @@
 import BlackjackCard from "./BlackjackCard";
 import "./Deck.css";
-
-interface Card {
-  value: string;
-  suit: string;
-}
+import { Card } from "../utils/types";
 
 interface DeckProps {
   deck: Card[];

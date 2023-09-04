@@ -4,11 +4,7 @@ import BlackjackCard from "../BlackjackCard";
 import "./Game.css";
 import { Container, Box, Stack, Typography } from "@mui/material";
 import GameTable from "../GameTable";
-
-interface Card {
-  value: string;
-  suit: string;
-}
+import { Card } from "../../utils/types";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
