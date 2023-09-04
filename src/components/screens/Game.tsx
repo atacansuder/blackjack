@@ -42,13 +42,30 @@ function calculateHand(hand: Card[]) {
 }
 
 function Game() {
-  const [money, setMoney] = useState<number>(1000);
+  const [money, setMoney] = useState<number>(() => {
+    const savedMoney = localStorage.getItem("userMoney");
+    return savedMoney ? Number(savedMoney) : 1000;
+  });
+
   const [bet, setBet] = useState<number>(0);
   const [gameState, setGameState] = useState<string>("betting");
   const [deck, setDeck] = useState<Card[]>(getDeck(2));
   const [dealerHand, setDealerHand] = useState<Card[]>([]);
   const [playerHand, setPlayerHand] = useState<Card[]>([]);
   const [firstTurn, setFirstTurn] = useState<boolean>(true);
+
+  // Get money from browser if it exists
+  useEffect(() => {
+    const savedMoney = localStorage.getItem("userMoney");
+    if (savedMoney) {
+      setMoney(Number(savedMoney));
+    }
+  }, []);
+
+  function updatedMoney(value: number) {
+    setMoney(value);
+    localStorage.setItem("userMoney", value.toString());
+  }
 
   async function dealCards(newDeck: Card[]) {
     const dealerCard1 = newDeck.pop();
@@ -98,7 +115,7 @@ function Game() {
       return;
     } else if (dealerTotal === 21 && playerTotal === 21) {
       setGameState("tie");
-      setMoney(money + bet);
+      updatedMoney(money + bet);
       return;
     }
 
@@ -130,12 +147,12 @@ function Game() {
   }
 
   function resetMoney() {
-    setMoney(1000);
+    updatedMoney(1000);
   }
 
   function placeBet(bet: number) {
     setBet(bet);
-    setMoney(money - bet);
+    updatedMoney(money - bet);
     setGameState("setup");
   }
 
@@ -176,13 +193,13 @@ function Game() {
         dealToDealer();
         break;
       case "playerWin":
-        setMoney(money + bet * 2);
+        updatedMoney(money + bet * 2);
         break;
       case "playerBlackjack":
-        setMoney(money + bet + bet * 1.5);
+        updatedMoney(money + bet + bet * 1.5);
         break;
       case "tie":
-        setMoney(money + bet);
+        updatedMoney(money + bet);
         break;
       case "playerLose":
         if (money === 0) {
@@ -255,8 +272,10 @@ function Game() {
           sx={{ visibility: gameState === "betting" ? "hidden" : "visible" }}
         >
           <Typography variant="h5">
-            Your hand (total: {calculateHand(playerHand)}), Money: ${money}
+            Your hand (total: {calculateHand(playerHand)}), Money:{" "}
+            {money !== null ? `$${money}` : "..."}
           </Typography>
+
           <Box display="flex" justifyContent="center" alignItems="center">
             <Stack direction="row" spacing={1}>
               {playerHand.length === 0 ? (
